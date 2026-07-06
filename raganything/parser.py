@@ -1846,6 +1846,9 @@ class DoclingParser(Parser):
     def read_from_block(
         self, block, type: str, output_dir: Path, cnt: int, num: str
     ) -> Dict[str, Any]:
+        # Real page number from Docling provenance; `cnt // 10` is a placeholder fallback.
+        prov = block.get("prov") or []
+        page_idx = prov[0].get("page_no", cnt // 10) if prov else cnt // 10
         if type == "texts":
             if block["label"] == "formula":
                 return {
@@ -1853,13 +1856,13 @@ class DoclingParser(Parser):
                     "img_path": "",
                     "text": block["orig"],
                     "text_format": "unknown",
-                    "page_idx": cnt // 10,
+                    "page_idx": page_idx,
                 }
             else:
                 return {
                     "type": "text",
                     "text": block["orig"],
-                    "page_idx": cnt // 10,
+                    "page_idx": page_idx,
                 }
         elif type == "pictures":
             try:
@@ -1879,14 +1882,14 @@ class DoclingParser(Parser):
                     "img_path": str(image_path.resolve()),  # Convert to absolute path
                     "image_caption": block.get("caption", ""),
                     "image_footnote": block.get("footnote", ""),
-                    "page_idx": cnt // 10,
+                    "page_idx": page_idx,
                 }
             except Exception as e:
                 self.logger.warning(f"Failed to process image {num}: {e}")
                 return {
                     "type": "text",
                     "text": f"[Image processing failed: {block.get('caption', '')}]",
-                    "page_idx": cnt // 10,
+                    "page_idx": page_idx,
                 }
         else:
             try:
@@ -1896,14 +1899,14 @@ class DoclingParser(Parser):
                     "table_caption": block.get("caption", ""),
                     "table_footnote": block.get("footnote", ""),
                     "table_body": block.get("data", []),
-                    "page_idx": cnt // 10,
+                    "page_idx": page_idx,
                 }
             except Exception as e:
                 self.logger.warning(f"Failed to process table {num}: {e}")
                 return {
                     "type": "text",
                     "text": f"[Table processing failed: {block.get('caption', '')}]",
-                    "page_idx": cnt // 10,
+                    "page_idx": page_idx,
                 }
 
     def parse_office_doc(
